@@ -14,6 +14,10 @@
                 "description": "Username for the Virtual Machine."
             }
         },
+        "deploymentUid": {
+            "type": "string",
+            "defaultValue": "[utcNow()]"
+        },
         "publicKey": {
             "type": "securestring",
             "metadata": {
@@ -115,10 +119,10 @@
         {
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "2020-06-01",
-            "name": "[concat(variables('networkInterfaceNamePublic'), copyIndex())]",
+            "name": "[concat(variables('networkInterfaceNamePublic'), parameters('deploymentUid'),copyIndex())]",
             "location": "[variables('location')]",
             "dependsOn": [
-                "[resourceId('Microsoft.Network/publicIpAddresses/', concat(variables('publicIpAddressName'), copyIndex()))]"
+                "[resourceId('Microsoft.Network/publicIpAddresses/', concat(variables('publicIpAddressName'), parameters('deploymentUid'), copyIndex()))]"
             ],
             "copy": {
                 "name": "NICPublicCopy",
@@ -134,7 +138,7 @@
                             },
                             "privateIPAllocationMethod": "Dynamic",
                             "publicIpAddress": {
-                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('publicIPAddressName'), copyIndex()))]"
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('publicIPAddressName'), parameters('deploymentUid'), copyIndex()))]"
                             }
                         }
                     }
@@ -148,7 +152,7 @@
         {
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "2020-06-01",
-            "name": "[concat(variables('networkInterfaceNamePrivate'), copyIndex())]",
+            "name": "[concat(variables('networkInterfaceNamePrivate'), parameters('deploymentUid'), copyIndex())]",
             "location": "[variables('location')]",
             "copy": {
                 "name": "NICPrivateCopy",
@@ -175,7 +179,7 @@
         {
             "type": "Microsoft.Network/publicIpAddresses",
             "apiVersion": "2019-02-01",
-            "name": "[concat(variables('publicIpAddressName'), copyIndex())]",
+            "name": "[concat(variables('publicIpAddressName'), parameters('deploymentUid'), copyIndex())]",
             "location": "[variables('location')]",
             "properties": {
                 "publicIpAllocationMethod": "Static",
@@ -194,10 +198,10 @@
         {
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2019-03-01",
-            "name": "[concat(parameters('vmName'), copyIndex())]",
+            "name": "[concat(parameters('vmName'), parameters('deploymentUid'), copyIndex())]",
             "location": "[variables('location')]",
             "dependsOn": [
-                "[resourceId('Microsoft.Network/networkInterfaces/', concat(variables('networkInterfaceName'), copyIndex()))]"
+                "[resourceId('Microsoft.Network/networkInterfaces/', concat(variables('networkInterfaceName'), parameters('deploymentUid'), copyIndex()))]"
             ],
             "copy": {
                 "name": "VmCopy",
@@ -225,12 +229,12 @@
                 "networkProfile": {
                     "networkInterfaces": [
                         {
-                            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('networkInterfaceName'), copyIndex()))]"
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('networkInterfaceName'), parameters('deploymentUid'), copyIndex()))]"
                         }
                     ]
                 },
                 "osProfile": {
-                    "computerName": "[concat(parameters('vmName'), copyIndex())]",
+                    "computerName": "[concat(parameters('vmName'), parameters('deploymentUid'), copyIndex())]",
                     "adminUsername": "[parameters('adminUsername')]",
                     "adminPassword": "[parameters('publicKey')]",
                     "linuxConfiguration": {
@@ -262,7 +266,7 @@
             "type": "array",
             "copy": {
                 "count": "[parameters('vmCount')]",
-                "input": "[reference(concat(variables('publicIpAddressName'), copyIndex())).ipAddress]"
+                "input": "[reference(concat(variables('publicIpAddressName'), parameters('deploymentUid'), copyIndex())).ipAddress]"
             },
             "condition": "[parameters('provisionPublicIp')]"
         },
@@ -270,7 +274,7 @@
             "type": "array",
             "copy": {
                 "count": "[parameters('vmCount')]",
-                "input": "[reference(concat(variables('networkInterfaceName'), copyIndex())).ipConfigurations[0].properties.privateIPAddress]"
+                "input": "[reference(concat(variables('networkInterfaceName'), parameters('deploymentUid'), copyIndex())).ipConfigurations[0].properties.privateIPAddress]"
             }
         }
     }
